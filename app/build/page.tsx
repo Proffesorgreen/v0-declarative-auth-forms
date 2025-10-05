@@ -6,6 +6,7 @@ import { JsonEditor } from "@/components/json-editor"
 import { FormBuilder } from "@/components/form-builder"
 import { Card, CardContent } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { FormConfigError, parseFormConfig } from "@/lib/form-parser"
 
 const defaultSchema = `{
   "type": "login",
@@ -54,8 +55,20 @@ export default function BuildPage() {
   useEffect(() => {
     try {
       const parsed = JSON.parse(jsonValue)
-      setParsedSchema(parsed)
-      setError(null)
+      try {
+        const validated = parseFormConfig(parsed)
+        setParsedSchema(validated)
+        setError(null)
+      } catch (err) {
+        if (err instanceof FormConfigError) {
+          setError(
+            err.issues.map((issue: any) => issue.message).join("\n")
+          )
+        } else {
+          setError(err instanceof Error ? err.message : "Invalid schema")
+        }
+        setParsedSchema(null)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Invalid JSON")
       setParsedSchema(null)
